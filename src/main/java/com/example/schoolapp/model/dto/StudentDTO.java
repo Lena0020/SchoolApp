@@ -21,8 +21,5 @@ public class StudentDTO {
     public StudentDTO(Student student) {
         this.id = student.getId();
         this.name = student.getName();
-        this.courses = student.getCourses().stream()
-                .map(CourseDTO::new)
-                .collect(Collectors.toSet());
     }
 }

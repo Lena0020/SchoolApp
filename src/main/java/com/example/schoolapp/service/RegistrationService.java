@@ -10,6 +10,7 @@ import com.example.schoolapp.repository.StudentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,30 +20,32 @@ public class RegistrationService {
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
 
+    @Value("${application.limits.students_per_course}")
+    private int studentsPerCourse;
+
+    @Value("${application.limits.courses_per_student}")
+    private int coursesPerStudent;
+
     @Transactional
     public void registerStudentForCourse(RegistrationDTO registrationDTO) throws CourseLimitException, StudentLimitException {
         int studentId = registrationDTO.getStudentId();
         int courseId = registrationDTO.getCourseId();
 
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new EntityNotFoundException("Student not found"));
-
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new EntityNotFoundException("Course not found"));
-
         long currentNumberOfCoursesForStudent = studentRepository.countCoursesForStudent(studentId);
-        if (currentNumberOfCoursesForStudent >= 5) {
+        if (currentNumberOfCoursesForStudent >= coursesPerStudent) {
             throw new CourseLimitException();
         }
-
         long currentNumberOfStudentsForCourse = courseRepository.countStudentsForCourse(courseId);
-        if (currentNumberOfStudentsForCourse >= 50) {
+        if (currentNumberOfStudentsForCourse >= studentsPerCourse) {
             throw new StudentLimitException();
         }
 
+        Student student = studentRepository.findById(studentId).orElseThrow(() -> new EntityNotFoundException("Student not found"));
+
+        Course course = courseRepository.findById(courseId).orElseThrow(() -> new EntityNotFoundException("Course not found"));
+
         student.getCourses().add(course);
         studentRepository.save(student);
-        // saving the student will automatically update the course due to the relationship mapping
     }
 }
 

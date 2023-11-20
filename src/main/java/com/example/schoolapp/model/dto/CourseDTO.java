@@ -23,8 +23,5 @@ public class CourseDTO {
         this.id = course.getId();
         this.name = course.getName();
         this.capacity = course.getCapacity();
-        this.students = course.getStudents().stream()
-                .map(StudentDTO::new)
-                .collect(Collectors.toSet());
     }
 }

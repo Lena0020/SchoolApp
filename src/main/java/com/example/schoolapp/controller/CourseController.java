@@ -1,9 +1,14 @@
 package com.example.schoolapp.controller;
 
+import com.example.schoolapp.exception.CourseLimitException;
+import com.example.schoolapp.exception.StudentLimitException;
 import com.example.schoolapp.model.dto.CourseDTO;
+import com.example.schoolapp.model.dto.RegistrationDTO;
 import com.example.schoolapp.service.CourseService;
+import com.example.schoolapp.service.RegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,48 +19,54 @@ import java.util.List;
 public class CourseController {
 
     private final CourseService courseService;
+    private final RegistrationService registrationService;
 
-    @GetMapping("/getAllCourses")
-    public ResponseEntity<?> getAllCourses() {
-        return ResponseEntity.ok(courseService.getAllCourses());
+    @GetMapping
+    public ResponseEntity<?> getAllCourses(
+            @RequestParam(name = "withStudents", required = false) Boolean withStudents,
+            @RequestParam(name = "studentId", required = false) Integer studentId
+    ) {
+        if (withStudents == null && studentId == null) {
+            return ResponseEntity.ok(courseService.getAllCourses());
+        } else {
+            if (studentId != null) {
+                List<CourseDTO> courses = courseService.getCoursesByStudentId(studentId);
+                return ResponseEntity.ok(courses);
+            } else if (withStudents) {
+                List<CourseDTO> coursesWithStudents = courseService.getAllCoursesWithStudents();
+                return ResponseEntity.ok(coursesWithStudents);
+            } else {
+                List<CourseDTO> emptyCourses = courseService.getCoursesWithNoStudents();
+                return ResponseEntity.ok(emptyCourses);
+            }
+        }
     }
 
-    @GetMapping("/getCourseById/{id}")
-    public ResponseEntity<?> getCourseById(@PathVariable int id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<CourseDTO> getCourseById(@PathVariable int id) {
         return ResponseEntity.ok(courseService.getCourseById(id));
     }
 
-    @PostMapping("/createCourse")
+    @PostMapping
     public ResponseEntity<?> createCourse(@RequestBody CourseDTO courseDTO) {
         return ResponseEntity.ok(courseService.createCourse(courseDTO));
     }
 
-    @PutMapping("/updateCourseById/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<?> updateCourse(@PathVariable int id, @RequestBody CourseDTO courseDTO) {
         return ResponseEntity.ok(courseService.updateCourse(id, courseDTO));
     }
 
-    @DeleteMapping("/deleteCourseById/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCourse(@PathVariable int id) {
         courseService.deleteCourse(id);
         return ResponseEntity.ok("Course deleted successfully.");
     }
 
-    @GetMapping("/getAllCoursesWithStudents")
-    public ResponseEntity<List<CourseDTO>> getAllCoursesWithStudents() {
-        List<CourseDTO> coursesWithStudents = courseService.getAllCoursesWithStudents();
-        return ResponseEntity.ok(coursesWithStudents);
-    }
-
-    @GetMapping("/getCoursesByStudent/{studentId}")
-    public ResponseEntity<List<CourseDTO>> getCoursesByStudent(@PathVariable int studentId) {
-        List<CourseDTO> courses = courseService.getCoursesByStudentId(studentId);
-        return ResponseEntity.ok(courses);
-    }
-    @GetMapping("/getCoursesWithNoStudents")
-    public ResponseEntity<List<CourseDTO>> getCoursesWithNoStudents() {
-        List<CourseDTO> emptyCourses = courseService.getCoursesWithNoStudents();
-        return ResponseEntity.ok(emptyCourses);
+    @PostMapping("/enroll")
+    public ResponseEntity<?> registerStudentForCourse(@Validated @RequestBody RegistrationDTO registrationDTO) throws StudentLimitException, CourseLimitException {
+        registrationService.registerStudentForCourse(registrationDTO);
+        return ResponseEntity.ok("Student registered for course successfully.");
     }
 }
 

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegistrationDTO {
+//    @CanStudentEnrollForCourse
     private int studentId;
     private int courseId;
 }
